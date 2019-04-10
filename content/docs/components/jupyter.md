@@ -83,9 +83,9 @@ Please note that when running on most cloud providers, the public IP address wil
 unsecured endpoint by default. For a production deployment with SSL and authentication, refer to the [documentation](https://github.com/kubeflow/kubeflow/tree/{{< params "githubbranch" >}}/components/jupyterhub).
 
 
-## Submitting k8s resources from Jupyter Notebook
+## Submitting k8s resources from Jupyter notebooks in `kubeflow` namespace
 
-The Jupyter Notebook pods are assigned the `jupyter-notebook` service account. This service account is bound to `jupyter-notebook` role which has namespace-scoped permissions to the following k8s resources:
+The Jupyter Notebook pods are assigned the `jupyter-notebook` service account in `kubeflow` namespace by default. This service account is bound to `jupyter-notebook` role which has namespace-scoped permissions to the following k8s resources:
 
 * pods
 * deployments
@@ -96,9 +96,123 @@ The Jupyter Notebook pods are assigned the `jupyter-notebook` service account. T
 
 This means that you can directly create these k8s resources directly from your jupyter notebook. kubectl is already installed in the notebook, so you can create k8s resources running the following command in a jupyter notebook cell
 
+
 ```
 !kubectl create -f myspec.yaml
 ```
+## Accessing GCP services from Jupyter notebooks in `kubeflow` namespace
+GCP credintial secret is currently created in `kubeflow` namespace and is injected to Jupyter Notebook pods by default. Secretes in k8s are all namespace-scoped.  GCP clinet services are already installed in the kubeflow notebooks. 
+This means that you can use GCP services available for your account in your jupyter notebooks. 
+For instance if your account has permission for using bigquery service, you can use it in your notebooks (follow instructions available in section Querying and visualizing BigQuery data [here](https://cloud.google.com/bigquery/docs/visualize-jupyter)
+to learn how to use bigquery in jupyter notebooks).   
+
+## Creating a Jupyter notebook in user-defined namespaces
+you can also create jupyter notebooks in other namespaces than `kubeflow`. However before creating any notebook you have to make sure that you create GCP secret and service account required by Kubeflow notebooks in your namespcae. 
+In specific, kubeflow expects a service account with the name of `jupyter-notebook`  and a secret with the name of `user-gcp-sa` to be avialable in your namespcae.  
+To this end, you can simply copy the above from `kubeflow` namespace to your desired namespace as follows:
+``` 
+kubectl get secret user-gcp-sa  --namespace=kubeflow --export -o yaml | kubectl apply --namespace=<your desired namespace> -f -
+```
+```
+kubectl get serviceaccount jupyter-notebook  --namespace=kubeflow --export -o yaml | kubectl apply --namespace=<your desired namespace> -f -
+``` 
+
+Alternatively, if you would like to leverage GCP services and kubeflow fairing functionality using your custom gcp and k8s service account you can  manually create 
+them in your namespace as follows (for simplicity let's name your namespace as "desired-namespace"):
+* create a GCP service account:
+```
+export PROJECT_ID=<your-project-id>
+export SA_NAME=<your-sa-name>
+export NAMESPACE=<your-desired-namespace>
+gcloud iam service-accounts create $SA_NAME
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
+    --role 'roles/editor
+```
+* create a key from your GCP service account:
+```
+gcloud iam service-accounts keys create ~/key.json \
+    --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
+```
+* create a secret from your key JSON file and name it `user-gcp-sa`
+
+```
+kubectl create secret generic user-gcp-sa -n $NAMESPACE  --from-file=key.json=~/key.json
+```
+* create a service account bounding to a role which has permission for k8s resources in your namespace. 
+To this end, you need to create three manifests to delare role, service account and rolebinding. Then you need to delpoy them in your cluster and desire =d namespace.
+  * create notebook-role using the following manifest stored in jupyter_notebook_role.yaml:
+````
+      apiVersion: rbac.authorization.k8s.io/v1beta1,
+      kind: Role,
+      metadata: 
+        name: jupyter-notebook-role
+      rules: [
+      - apiGroups: [ ""]
+        resources: ["pods","pods/log","secrets","services"]
+        verbs: ["*",]
+      - apiGroups: ["","apps","extensions"]
+        resources: ["deployments","replicasets"]
+        verbs: ["*"]
+      - apiGroups: ["kubeflow.org",]
+        resources: ["*",]
+        verbs: ["*",]
+      - apiGroups: ["batch"]
+        resources: ["jobs"]
+        verbs: ["*"]
+```
+
+ Then deploy the manifest in your namespace by running the following:
+`kubectl apply -n $NAMESPACE -f jupyter_notebook_role.yaml`
+
+
+  * create service account jupyter-notebook from the following manifest stored in `jupyter_notebook.yaml`:
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata: 
+  name: jupyter-notebook```
+
+`kubectl apply -n $NAMESPACE -f jupyter_notebook.yaml`
+
+  * create rolebinding to bound jupyter-notebook to the role from the following manifest stored in `jupyter_notebook_role_binding.yaml`, and then deploy it.
+```   
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: RoleBinding
+      metadata: 
+        name: jupyter-notebook-role-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: jupyter-notebook-role
+      subjects: 
+      - kind: ServiceAccount
+        name: jupyter-notebook
+```
+```kubectl apply -n $NAMESPACE -f jupyter_notebook_role_binding.yaml```
+
+Finally, please note that in order to be able to spawn a notebook a secret named user-gcp-sa  and a service account named juptrer-notebook   must exist in your namespace. 
+If you are not interested in using GCP services and Kubeflow fairing, the workaround is to create a 
+the aforementioned secret and service account without necessarily having them to point to an actual account. 
+write a secret manifest with arbitrary username and password:
+``` apiVersion: v1
+  kind: Secret
+  metadata:
+    name: mysecret
+  type: Opaque
+```
+write a serviceaccount manifest without binding it to a role: 
+```
+ apiVersion: v1
+ kind: ServiceAccount
+ metadata: 
+  name: jupyter-notebook
+```
+apply the above manifest in your namespace
+```kubectl apply -n $NAMESPACE -f gcp_secret.yaml```
+```kubectl apply -n $NAMESPACE -f jupytet_notebook.yaml```
+
+
 ## Creating a custom Jupyter image
 You can create your own Jupyter image and use it in your Kubeflow cluster.
 Your custom image needs to meet the requirements created by Kubeflow Notebook Controller. Kubeflow Notebook Controller  manages the life-cycle of notebooks.
