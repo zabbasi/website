@@ -208,7 +208,7 @@ write a secret manifest in a file named gcpSecret.yaml:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: mysecret
+  name: user-gcp-sa
 type: Opaque
 ```
 write a serviceaccount manifest without binding it to a role and store it in a file named jupyterNotebook.yaml: 
