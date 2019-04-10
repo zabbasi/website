@@ -144,10 +144,10 @@ kubectl create secret generic user-gcp-sa -n $NAMESPACE\
 ```
 * create a service account bounding to a role which has permission for k8s resources in your namespace. 
 To this end, you need to create three manifests to declare role, service account and rolebinding. Then you need to delpoy them in your cluster and desired namespace.
-  * create notebook-role using the following manifest in a file named  jupyterRole.yaml:
+  * create notebook-role using the following manifest in a file named  jupyterRole.yaml, and then deploy it:
 ````
-      apiVersion: rbac.authorization.k8s.io/v1beta1,
-      kind: Role,
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: Role
       metadata: 
         name: jupyter-notebook-role
       rules: [
@@ -157,16 +157,17 @@ To this end, you need to create three manifests to declare role, service account
       - apiGroups: ["","apps","extensions"]
         resources: ["deployments","replicasets"]
         verbs: ["*"]
-      - apiGroups: ["kubeflow.org",]
-        resources: ["*",]
+      - apiGroups: ["kubeflow.org"]
+        resources: ["*"]
         verbs: ["*",]
       - apiGroups: ["batch"]
         resources: ["jobs"]
         verbs: ["*"]
 ```
 
- Then deploy the manifest in your namespace by running the following:
-```kubectl apply -n $NAMESPACE -f jupyterRole.yaml```
+```
+kubectl apply -n $NAMESPACE -f jupyterRole.yaml
+```
 
 
   * create service account jupyter-notebook from the following manifest in a file named jupyterNotebook.yaml and then deploy it:
@@ -174,11 +175,14 @@ To this end, you need to create three manifests to declare role, service account
 apiVersion: v1
 kind: ServiceAccount
 metadata: 
-  name: jupyter-notebook```
+  name: jupyter-notebook
+```
 
-```kubectl apply -n $NAMESPACE -f jupyter_notebook.yaml```
+```
+kubectl apply -n $NAMESPACE -f jupyterNotebook.yaml
+```
 
-  * create rolebinding to bound jupyter-notebook to the role from the following manifest in a file named jupyterRrolr=eBinding.yaml, and then deploy it.
+  * create rolebinding to bound jupyter-notebook to the role from the following manifest in a file named jupyterRoleBinding.yaml, and then deploy it.
 ```   
       apiVersion: rbac.authorization.k8s.io/v1beta1
       kind: RoleBinding
@@ -192,17 +196,20 @@ metadata:
       - kind: ServiceAccount
         name: jupyter-notebook
 ```
-```kubectl apply -n $NAMESPACE -f jupyter_notebook_role_binding.yaml```
+```
+kubectl apply -n $NAMESPACE -f jupyter_notebook_role_binding.yaml
+```
 
 Finally, please note that in order to be able to spawn a notebook a secret named user-gcp-sa  and a service account named juptrer-notebook   must exist in your namespace. 
 If you are not interested in using GCP services and Kubeflow fairing, the workaround is to create a 
 the aforementioned secret and service account without necessarily having them to point to an actual account. 
 write a secret manifest in a file named gcpSecret.yaml:
-``` apiVersion: v1
-  kind: Secret
-  metadata:
-    name: mysecret
-  type: Opaque
+``` 
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+type: Opaque
 ```
 write a serviceaccount manifest without binding it to a role and store it in a file named jupyterNotebook.yaml: 
 ```
@@ -211,9 +218,13 @@ write a serviceaccount manifest without binding it to a role and store it in a f
  metadata: 
   name: jupyter-notebook
 ```
-apply the above manifests in your namespace
-```kubectl apply -n $NAMESPACE -f gcpSecret.yaml```
-```kubectl apply -n $NAMESPACE -f jupytet_notebook.yaml```
+Apply the above manifests in your namespace
+```
+kubectl apply -n $NAMESPACE -f gcpSecret.yaml
+```
+```
+kubectl apply -n $NAMESPACE -f jupytetNotebook.yaml
+```
 
 
 ## Creating a custom Jupyter image
