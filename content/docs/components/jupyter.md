@@ -126,17 +126,18 @@ them in your namespace as follows:
 export PROJECT_ID=<your-project-id>
 export SA_NAME=<your-sa-name>
 export NAMESPACE=<your-desired-namespace>
+export GCPROLES=<your-desired-gcp-role>
 gcloud iam service-accounts create $SA_NAME
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com \
-    --role roles/editor
+    --role $GCPROLE
 ```
 * Create a key from your GCP service account:
 ```
 gcloud iam service-accounts keys create <path-to-key>/key.json \
     --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
-* Create a secret from your key JSON file and name it `user-gcp-sa`
+* Create a secret from your key JSON file and name it `user-gcp-sa`:
 
 ```
 kubectl create secret generic user-gcp-sa -n $NAMESPACE\
@@ -170,7 +171,7 @@ rules:
 ```
 
 
-  * Write the service account `jupyter-notebook` from the following manifest in a file named jupyterNotebook.yaml and then deploy it:
+  * Write the service account `jupyter-notebook` from the following manifest in a file named `jupyterNotebook.yaml` and then deploy it:
 ```
 apiVersion: v1
 kind: ServiceAccount
