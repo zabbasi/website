@@ -101,14 +101,14 @@ This means that you can directly create these k8s resources directly from your j
 !kubectl create -f myspec.yaml
 ```
 ## Accessing GCP services from Jupyter notebooks in `kubeflow` namespace
-GCP credintial secret is currently created in `kubeflow` namespace and is injected to Jupyter Notebook pods by default. Secretes in k8s are all namespace-scoped.  GCP clinet services are already installed in the kubeflow notebooks. 
+GCP credential secret is currently created in `kubeflow` namespace and is injected to Jupyter Notebook pods by default. Secretes in k8s are all namespace-scoped.  GCP client services are already installed in the kubeflow notebooks. 
 This means that you can use GCP services available for your account in your jupyter notebooks. 
-For instance if your account has permission for using bigquery service, you can use it in your notebooks (follow instructions available in section Querying and visualizing BigQuery data [here](https://cloud.google.com/bigquery/docs/visualize-jupyter)
-to learn how to use bigquery in jupyter notebooks).   
+For instance, if your account has permission for using BigQuery service, you can use it in your notebooks (follow instructions available in section Querying and visualizing BigQuery data [here](https://cloud.google.com/bigquery/docs/visualize-jupyter)
+to learn how to use BigQuery in jupyter notebooks).   
 
 ## Creating a Jupyter notebook in user-defined namespaces
 You can also create jupyter notebooks in other namespaces than `kubeflow`. However, before creating any notebook you have to make sure that you create GCP secret and service account required by Kubeflow notebooks in your namespcae. 
-In specific, kubeflow expects a service account named `jupyter-notebook`  and a secret named `user-gcp-sa` to exist in your namespcae.  
+In specific, kubeflow expects a service account named `jupyter-notebook`  and a secret named `user-gcp-sa` to exist in your namespace.  
 To this end, you can simply copy the above from `kubeflow` namespace to your desired namespace as follows:
 ``` 
 kubectl get secret user-gcp-sa  --namespace=kubeflow --export -o yaml |\
@@ -133,40 +133,40 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ```
 * Create a key from your GCP service account:
 ```
-gcloud iam service-accounts keys create ~/key.json \
+gcloud iam service-accounts keys create <path-to-key>/key.json \
     --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
 * create a secret from your key JSON file and name it `user-gcp-sa`
 
 ```
 kubectl create secret generic user-gcp-sa -n $NAMESPACE\
-  --from-file=key.json=~/key.json
+  --from-file=user-gcp-sa.json=<path-to-key>/key.json
 ```
 * Create a service account bounding to a role which has permission for k8s resources in your namespace. 
-To this end, you need to create three manifests to declare role, service account and rolebinding. Then you need to delpoy them in your cluster and desired namespace.
+To this end, you need to create three manifests to declare role, service account and rolebinding. Then you need to deploy them in your cluster and desired namespace.
   * Create notebook-role using the following manifest in a file named  jupyterRole.yaml, and then deploy it:
 ```
-      apiVersion: rbac.authorization.k8s.io/v1beta1
-      kind: Role
-      metadata: 
-        name: jupyter-notebook-role
-      rules: [
-      - apiGroups: [ ""]
-        resources: ["pods","pods/log","secrets","services"]
-        verbs: ["*",]
-      - apiGroups: ["","apps","extensions"]
-        resources: ["deployments","replicasets"]
-        verbs: ["*"]
-      - apiGroups: ["kubeflow.org"]
-        resources: ["*"]
-        verbs: ["*",]
-      - apiGroups: ["batch"]
-        resources: ["jobs"]
-        verbs: ["*"]
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: jupyter-notebook-role
+rules:
+- apiGroups: [ ""]
+  resources: ["pods","pods/log","secrets","services"]
+  verbs: ["*",]
+- apiGroups: ["","apps","extensions"]
+  resources: ["deployments","replicasets"]
+  verbs: ["*"]
+- apiGroups: ["kubeflow.org"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["*"]
 ```
 
 ```
-kubectl apply -n $NAMESPACE -f jupyterRole.yaml
+   kubectl apply -n $NAMESPACE -f jupyterRole.yaml
 ```
 
 
@@ -183,24 +183,24 @@ kubectl apply -n $NAMESPACE -f jupyterNotebook.yaml
 ```
 
   * Create rolebinding to bound jupyter-notebook to the role from the following manifest in a file named jupyterRoleBinding.yaml, and then deploy it.
-```   
-      apiVersion: rbac.authorization.k8s.io/v1beta1
-      kind: RoleBinding
-      metadata: 
-        name: jupyter-notebook-role-binding
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: Role
-        name: jupyter-notebook-role
-      subjects: 
-      - kind: ServiceAccount
-        name: jupyter-notebook
+``` 
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: jupyter-notebook-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jupyter-notebook-role
+subjects:
+- kind: ServiceAccount
+  name: jupyter-notebook  
 ```
 ```
-kubectl apply -n $NAMESPACE -f jupyter_notebook_role_binding.yaml
+kubectl apply -n $NAMESPACE -f jupyterRoleBinding.yaml
 ```
 
-Finally, please note that in order to be able to spawn a notebook a secret named user-gcp-sa  and a service account named juptrer-notebook   must exist in your namespace. 
+Finally, please note that in order to be able to spawn a notebook a secret named user-gcp-sa  and a service account named jupyter-notebook   must exist in your namespace. 
 If you are not interested in using GCP services and Kubeflow fairing, the workaround is to create a 
 the aforementioned secret and service account without necessarily having them to point to an actual account as follows: 
 * Write a secret manifest in a file named gcpSecret.yaml:
