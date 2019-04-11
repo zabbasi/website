@@ -107,7 +107,7 @@ For instance, if your account has permission for using BigQuery service, you can
 to learn how to use BigQuery in jupyter notebooks).   
 
 ## Creating a Jupyter notebook in user-defined namespaces
-You can also create jupyter notebooks in other namespaces than `kubeflow`. However, before creating any notebook you have to make sure that you create GCP secret and service account required by Kubeflow notebooks in your namespcae. 
+You can also create jupyter notebooks in other namespaces than `kubeflow`. However, before creating any notebook you have to make sure that you create GCP secret and service account required by Kubeflow notebooks in your namespace. 
 In specific, kubeflow expects a service account named `jupyter-notebook`  and a secret named `user-gcp-sa` to exist in your namespace.  
 To this end, you can simply copy the above from `kubeflow` namespace to your desired namespace as follows:
 ``` 
@@ -136,7 +136,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud iam service-accounts keys create <path-to-key>/key.json \
     --iam-account $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
-* create a secret from your key JSON file and name it `user-gcp-sa`
+* Create a secret from your key JSON file and name it `user-gcp-sa`
 
 ```
 kubectl create secret generic user-gcp-sa -n $NAMESPACE\
@@ -170,7 +170,7 @@ rules:
 ```
 
 
-  * Create service account jupyter-notebook from the following manifest in a file named jupyterNotebook.yaml and then deploy it:
+  * Write the service account `jupyter-notebook` from the following manifest in a file named jupyterNotebook.yaml and then deploy it:
 ```
 apiVersion: v1
 kind: ServiceAccount
@@ -182,7 +182,7 @@ metadata:
 kubectl apply -n $NAMESPACE -f jupyterNotebook.yaml
 ```
 
-  * Create rolebinding to bound jupyter-notebook to the role from the following manifest in a file named jupyterRoleBinding.yaml, and then deploy it.
+  * Write a `RoleBinding` to bound `jupyter-notebook` to the role from the following manifest in a file named `jupyterRoleBinding.yaml`, and then deploy it.
 ``` 
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
@@ -200,10 +200,9 @@ subjects:
 kubectl apply -n $NAMESPACE -f jupyterRoleBinding.yaml
 ```
 
-Finally, please note that in order to be able to spawn a notebook a secret named user-gcp-sa  and a service account named jupyter-notebook   must exist in your namespace. 
-If you are not interested in using GCP services and Kubeflow fairing, the workaround is to create a 
-the aforementioned secret and service account without necessarily having them to point to an actual account as follows: 
-* Write a secret manifest in a file named gcpSecret.yaml:
+Finally, if you are not interested in using GCP services and/or Kubeflow Fairing, the workaround is to create  
+the aforementioned secret (i.e., `user-gcp-sa`) and service account (i.e., `jupyter-notebook`) without necessarily having them to point to an actual account as follows: 
+* Write a secret manifest in a file named `gcpSecret.yaml`:
 ``` 
 apiVersion: v1
 kind: Secret
@@ -211,7 +210,7 @@ metadata:
   name: user-gcp-sa
 type: Opaque
 ```
-* Write a serviceaccount manifest without binding it to a role and store it in a file named jupyterNotebook.yaml: 
+* Write a serviceaccount manifest without binding it to a role and store it in a file named `jupyterNotebook.yaml`: 
 ```
  apiVersion: v1
  kind: ServiceAccount
