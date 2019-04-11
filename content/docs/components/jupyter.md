@@ -108,7 +108,7 @@ to learn how to use BigQuery in jupyter notebooks).
 
 ## Creating a Jupyter notebook in user-defined namespaces
 You can also create jupyter notebooks in other namespaces than `kubeflow`. However, before creating any notebook you have to make sure that you create GCP secret and service account required by Kubeflow notebooks in your namespace. 
-In specific, kubeflow expects a service account named `jupyter-notebook`  and a secret named `user-gcp-sa` to exist in your namespace.  
+In specific, Kubeflow expects a service account named `jupyter-notebook`  and a secret named `user-gcp-sa` to exist in your namespace.  
 To this end, you can simply copy the above from `kubeflow` namespace to your desired namespace as follows:
 ``` 
 kubectl get secret user-gcp-sa  --namespace=kubeflow --export -o yaml |\
@@ -119,9 +119,9 @@ kubectl get serviceaccount jupyter-notebook  --namespace=kubeflow --export -o ya
  kubectl apply --namespace=<your desired namespace> -f -
 ``` 
 
-Alternatively, if you would like to leverage GCP services and kubeflow fairing functionality using your account you can  manually create 
+Alternatively, if you would like to leverage GCP services and Kubeflow Fairing functionality using your account you can  manually create 
 them in your namespace as follows:
-* Create a GCP service account:
+* Create a GCP service account with your desired role (to use Kubeflow Fairing, choose roles/editor):
 ```
 export PROJECT_ID=<your-project-id>
 export SA_NAME=<your-sa-name>
