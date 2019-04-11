@@ -101,7 +101,7 @@ This means that you can directly create these k8s resources directly from your j
 !kubectl create -f myspec.yaml
 ```
 ## Accessing GCP services from Jupyter notebooks in `kubeflow` namespace
-GCP credential secret is currently created in `kubeflow` namespace and is injected to Jupyter Notebook pods by default. Secretes in k8s are all namespace-scoped.  GCP client services are already installed in the kubeflow notebooks. 
+GCP credential secret is currently created in `kubeflow` namespace and is injected to Jupyter Notebook pods by default. Secretes in k8s are all namespace-scoped.  GCP client services are already installed in Kubeflow notebooks. 
 This means that you can use GCP services available for your account in your jupyter notebooks. 
 For instance, if your account has permission for using BigQuery service, you can use it in your notebooks (follow instructions available in section Querying and visualizing BigQuery data [here](https://cloud.google.com/bigquery/docs/visualize-jupyter)
 to learn how to use BigQuery in jupyter notebooks).   
